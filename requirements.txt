@@ -35,4 +35,3 @@ sqlparse
 typing_extensions
 tzdata
 virtualenv
-wheel
