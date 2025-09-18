@@ -1,6 +1,6 @@
 # requirements.txt
 asgiref==3.7.2
-aamarpay==0.1.2
+sslcommerz-python
 ai-api-client-sdk==0.1.0
 ai-core-sdk==0.1.0
 async-timeout==4.0.3
