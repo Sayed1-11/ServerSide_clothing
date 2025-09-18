@@ -14,3 +14,4 @@ psycopg2-binary
 sqlparse
 sslcommerz-python
 tzdata
+typed-ast
