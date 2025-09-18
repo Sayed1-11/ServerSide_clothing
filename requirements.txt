@@ -176,7 +176,6 @@ python-json-logger
 python-snappy
 pytweening
 pytz
-pywin32
 pywinpty
 PyYAML
 pyzmq
