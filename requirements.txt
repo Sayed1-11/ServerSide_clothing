@@ -32,6 +32,4 @@ pytweening
 setuptools
 sslcommerz-python
 sqlparse
-typing_extensions
-tzdata
 virtualenv
