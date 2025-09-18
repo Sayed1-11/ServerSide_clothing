@@ -1,5 +1,4 @@
 asgiref
-aamarpay
 ai-api-client-sdk
 ai-core-sdk
 async-timeout
@@ -57,3 +56,4 @@ tzdata
 zope.interface
 usaddress
 django-sslserver
+sslcommerz-python
