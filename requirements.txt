@@ -34,6 +34,6 @@ sqlparse==0.4.4
 typing_extensions==4.9.0
 tzdata==2023.3
 virtualenv==20.24.6
-wheel==0.41.3
+wheel
 sslcommerz-python
 
