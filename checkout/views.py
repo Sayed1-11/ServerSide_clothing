@@ -24,6 +24,24 @@ class OrderViewSet(viewsets.ModelViewSet):
 
         validated_data = serializer.validated_data
         cart_items = validated_data.pop('cart_items')
+        for item in cart_items:
+            variant = item.variant
+            product = variant.product
+            
+
+            if variant.quantity < item.quantity:
+                raise serializers.ValidationError(
+                    f"Not enough stock for {product.name} - {variant.color} / {variant.size}. "
+                    f"Available: {variant.quantity}, Requested: {item.quantity}"
+                )
+            
+            # Check if product has enough stock (additional safety check)
+            if product.quantity < item.quantity:
+                raise serializers.ValidationError(
+                    f"Not enough stock for {product.name}. "
+                    f"Available: {product.quantity}, Requested: {item.quantity}"
+                )
+
         total = sum(item.quantity * item.variant.product.price for item in cart_items)
 
         if validated_data.get('shipping_method') == 'online_payment':
@@ -88,32 +106,40 @@ class OrderViewSet(viewsets.ModelViewSet):
                 )
 
         # 🟡 Cash on Delivery (COD)
-        with transaction.atomic():
-            order = Order.objects.create(
-                **validated_data,
-                total=total,
-            )
-            order.cart_items.set(cart_items)
-            for item in cart_items:
-                variant = item.variant
-                product = variant.product
-                
-                # Check both variant and product stock
-                if variant.quantity < item.quantity or product.quantity < item.quantity:
-                    raise serializers.ValidationError(
-                        f"Not enough stock for variant {variant}."
-                    )
-                
-                # Decrease both variant and product quantities
-                variant.quantity -= item.quantity
-                variant.save()
-                
-                product.quantity -= item.quantity
-                product.save()
+        else:
+                    # Cash on Delivery
+                with transaction.atomic():
+                        order = Order.objects.create(
+                            **validated_data,
+                            total=total,
+                        )
+                        order.cart_items.set(cart_items)
+                        
+                        # Update stock
+                        for item in cart_items:
+                            variant = item.variant
+                            product = variant.product
+                            
+                            variant.quantity -= item.quantity
+                            variant.save()
+                            
+                            product.quantity -= item.quantity
+                            product.save()
+                # Clear the cart after successful order
+                cart = cart_items.first().cart if cart_items.exists() else None
+                if cart:
+                    cart.items.all().delete()
 
-        headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-    
+                return Response(
+                    {
+                        "message": "Order created successfully",
+                        "order_id": order.id,
+                        "total": total
+                    }, 
+                    status=status.HTTP_201_CREATED
+                )
+
+
 
 @api_view(['POST'])
 @permission_classes([AllowAny]) 
