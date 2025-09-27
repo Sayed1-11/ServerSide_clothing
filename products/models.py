@@ -18,10 +18,14 @@ class Category(models.Model):
             self.slug = slugify(self.name)
         super().save(*args, **kwargs)
 
+    @property
+    def product_count(self):
+        return self.products.count()
+
 
 class Product(models.Model):
     name = models.CharField(max_length=255)
-    category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='products')
+    categories = models.ManyToManyField(Category, related_name='products')
     slug = models.SlugField(unique=True)
     description = models.TextField(blank=True)
     price = models.DecimalField(max_digits=10, decimal_places=2)
@@ -30,6 +34,11 @@ class Product(models.Model):
     quantity = models.PositiveIntegerField(default=0)
     sku = models.CharField(max_length=100, unique=True,null=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    is_new = models.BooleanField(default=False)  # For new arrivals
+    is_featured = models.BooleanField(default=False)  # For featured products
+
+    class Meta:
+        ordering = ['-created_at']
 
     def __str__(self):
         return self.name
@@ -38,6 +47,15 @@ class Product(models.Model):
         if not self.slug:
             self.slug = slugify(self.name)
         super().save(*args, **kwargs)
+    
+    def get_primary_category(self):
+        """Get the first/main category for breadcrumbs, URLs, etc."""
+        return self.categories.first()
+    
+    @property
+    def is_in_stock(self):
+        return self.quantity > 0 or any(variant.quantity > 0 for variant in self.variants.all())
+
         
 COLOR_CHOICES = [
     ('red', 'Red'),

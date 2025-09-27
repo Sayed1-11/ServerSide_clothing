@@ -28,6 +28,8 @@ class ProductSerializer(serializers.ModelSerializer):
             'created_at',
             'category',
             'category_id',
+            'is_new',
+            'is_featured'
         ]
 
 class ProductInventorySerializer(serializers.ModelSerializer):

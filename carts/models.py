@@ -2,23 +2,36 @@
 from django.db import models
 from products.models import ProductVariant
 from django.forms import ValidationError
+from django.utils import timezone
+from datetime import timedelta
 
 class CartManager(models.Manager):
-    def get_or_create_for_session(self, session_key):
-        cart, created = self.get_or_create(session_key=session_key)
-        return cart
+    def get_or_create_with_cleanup(self, session_key):
+        import random
+        if random.randint(1, 100) == 1:
+            self.cleanup_old_empty_carts()
+        
+        return self.get_or_create(session_key=session_key)
     
-    def get_for_session(self, session_key):
-        try:
-            return self.get(session_key=session_key)
-        except Cart.DoesNotExist:
-            return None
-
+    def cleanup_old_empty_carts(self):
+        """Delete empty carts older than 1 day"""
+        one_day_ago = timezone.now() - timedelta(days=1)
+        
+        empty_carts = self.filter(
+            items__isnull=True,
+            updated_at__lt=one_day_ago
+        )
+        
+        count = empty_carts.count()
+        if count > 0:
+            empty_carts.delete()
+            print(f"Cleaned up {count} empty carts")
+        return count
 
 class Cart(models.Model):
     session_key = models.CharField(max_length=40, null=True, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)  # Track last update
+    updated_at = models.DateTimeField(auto_now=True)  
 
     objects = CartManager()
 
@@ -29,8 +42,18 @@ class Cart(models.Model):
     def total(self):
         return sum(item.total_price for item in self.items.all())
     
+    @property
+    def is_empty(self):
+        return self.items.count() == 0
     
-
+    def should_be_deleted(self):
+        """Check if cart should be deleted (empty and older than 1 day)"""
+        if not self.is_empty:
+            return False
+        
+        one_day_ago = timezone.now() - timedelta(days=1)
+        return self.updated_at < one_day_ago
+    
 class CartItem(models.Model):
     cart = models.ForeignKey(Cart, related_name='items', on_delete=models.CASCADE)
     variant = models.ForeignKey(ProductVariant, on_delete=models.CASCADE)
