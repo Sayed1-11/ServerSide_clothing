@@ -8,11 +8,13 @@ class CategorySerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'slug', 'image']
 
 
-
 class ProductSerializer(serializers.ModelSerializer):
-    category = CategorySerializer()
-    category_id = serializers.PrimaryKeyRelatedField(
-        queryset=Category.objects.all(), source='category'
+    categories = CategorySerializer(many=True, read_only=True)
+    category_ids = serializers.PrimaryKeyRelatedField(
+        queryset=Category.objects.all(),
+        source='categories',
+        many=True,
+        write_only=True
     )
 
     class Meta:
@@ -26,11 +28,12 @@ class ProductSerializer(serializers.ModelSerializer):
             'image',
             'available',
             'created_at',
-            'category',
-            'category_id',
+            'categories',      # updated
+            'category_ids',    # write-only field for assigning categories
             'is_new',
             'is_featured'
         ]
+
 
 class ProductInventorySerializer(serializers.ModelSerializer):
     stock_status = serializers.SerializerMethodField()
