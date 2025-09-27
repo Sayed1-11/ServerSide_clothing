@@ -27,6 +27,7 @@ class ProductSerializer(serializers.ModelSerializer):
             'price',
             'image',
             'available',
+            'quantity',
             'created_at',
             'categories',      # updated
             'category_ids',    # write-only field for assigning categories
