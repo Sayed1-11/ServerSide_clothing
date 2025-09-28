@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: #fff3cd; padding: 20px; text-align: center; }
+        .order-details { background: #fff; padding: 20px; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Payment Failed</h1>
+        </div>
+        
+        <div class="order-details">
+            <h2>Hello {{ customer_name }},</h2>
+            <p>We're sorry, but your payment for order #{{ order_id }} has failed.</p>
+            
+            <p><strong>Amount:</strong> ৳{{ total_amount }}</p>
+            <p><strong>Transaction ID:</strong> {{ transaction_id }}</p>
+            
+            <p>Your order has been cancelled. Please try placing the order again.</p>
+            <p>If you continue to experience issues, please contact our support team.</p>
+        </div>
+    </div>
+</body>
+</html>

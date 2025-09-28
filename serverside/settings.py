@@ -89,7 +89,7 @@ CORS_ALLOWED_ORIGINS = [
 ]
 CSRF_TRUSTED_ORIGINS = [
     "https://serverside-clothing.onrender.com",
-    "https://www.serverside-clothing.onrender.com",  # যদি www ব্যবহার হয়
+    "https://www.serverside-clothing.onrender.com", 
 ]
 
 CORS_ALLOW_CREDENTIALS = True
@@ -146,6 +146,14 @@ MEDIA_ROOT = BASE_DIR / 'media'
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_USE_TLS = True
+EMAIL_PORT = 587
+EMAIL_HOST_USER = config("EMAIL")
+EMAIL_HOST_PASSWORD = config("EMAIL_PASSWORD")
+
+
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',

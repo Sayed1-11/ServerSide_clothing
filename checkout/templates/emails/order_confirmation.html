@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: #f8f9fa; padding: 20px; text-align: center; }
+        .order-details { background: #fff; padding: 20px; margin: 20px 0; }
+        .footer { background: #f8f9fa; padding: 20px; text-align: center; font-size: 12px; }
+        .order-items { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        .order-items th { background: #f8f9fa; padding: 12px; text-align: left; }
+        .order-items td { padding: 12px; border-bottom: 1px solid #ddd; }
+        .item-image { width: 60px; height: 60px; object-fit: cover; border-radius: 4px; }
+        .item-details { vertical-align: top; }
+        .item-name { font-weight: bold; margin-bottom: 5px; }
+        .item-variant { color: #666; font-size: 14px; }
+        .item-price { text-align: right; }
+        .total-row { background: #f8f9fa; font-weight: bold; }
+        .summary-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .summary-table td { padding: 8px 0; }
+        .summary-table .label { text-align: right; padding-right: 20px; }
+        .summary-table .amount { text-align: right; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Order Confirmation</h1>
+        </div>
+        
+        <div class="order-details">
+            <h2>Hello {{ customer_name }},</h2>
+            <p>Thank you for your order! Your order has been confirmed.</p>
+            
+            <h3>Order Details:</h3>
+            <p><strong>Order ID:</strong> #{{ order_id }}</p>
+            <p><strong>Order Date:</strong> {{ order_date|date:"F d, Y" }}</p>
+            <p><strong>Payment Method:</strong> {{ payment_method }}</p>
+            <p><strong>Status:</strong> {{ order_status }}</p>
+            
+            {% if transaction_id %}
+            <p><strong>Transaction ID:</strong> {{ transaction_id }}</p>
+            {% endif %}
+            
+            <h3>Order Items:</h3>
+            <table class="order-items">
+                <thead>
+                    <tr>
+                        <th>Product</th>
+                        <th>Variant</th>
+                        <th>Quantity</th>
+                        <th>Price</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in items %}
+                    <tr>
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                {% if item.variant.product.image %}
+                                <img src="{{ item.variant.product.image.url }}" alt="{{ item.variant.product.name }}" class="item-image">
+                                {% else %}
+                                <div style="width: 60px; height: 60px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; border-radius: 4px;">
+                                    <span style="color: #999; font-size: 10px;">No Image</span>
+                                </div>
+                                {% endif %}
+                                <div class="item-details">
+                                    <div class="item-name">{{ item.variant.product.name }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="item-variant">
+                            {{ item.variant.color|title }} / {{ item.variant.size }}
+                        </td>
+                        <td>{{ item.quantity }}</td>
+                        <td>৳{{ item.variant.product.price }}</td>
+                        <td>৳{{ item.total_price }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <!-- Order Summary -->
+            <table class="summary-table">
+                <tr>
+                    <td class="label">Subtotal:</td>
+                    <td class="amount">৳{{ subtotal }}</td>
+                </tr>
+                <tr>
+                    <td class="label">Shipping:</td>
+                    <td class="amount">৳{{ shipping_price }}</td>
+                </tr>
+                <tr class="total-row">
+                    <td class="label">Total:</td>
+                    <td class="amount">৳{{ total_amount }}</td>
+                </tr>
+            </table>
+            
+            <h3>Shipping Address:</h3>
+            <p>{{ shipping_address }}<br>
+            {{ city }}<br>
+            Phone: {{ phone }}</p>
+        </div>
+        
+        <div class="footer">
+            <p>Thank you for shopping with us!</p>
+            <p>If you have any questions, please contact our support team.</p>
+        </div>
+    </div>
+</body>
+</html>

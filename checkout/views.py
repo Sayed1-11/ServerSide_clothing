@@ -11,7 +11,26 @@ import requests
 from rest_framework.decorators import api_view,permission_classes
 from django.db import transaction
 from rest_framework import serializers
+from django.core.mail import EmailMessage, EmailMultiAlternatives
+from django.template.loader import render_to_string
 
+def send_checkout_email(email, subject, template, context):
+    try:
+        message = render_to_string(template, context)
+        print("Sending email")
+        send_email = EmailMultiAlternatives(
+            subject, 
+            '', 
+            from_email=settings.EMAIL_HOST_USER, 
+            to=[email]
+        )
+        send_email.attach_alternative(message, "text/html")
+        send_email.send()
+        return True
+    except Exception as e:
+        print(f"Email sending failed: {str(e)}")
+        return False
+    
 class OrderViewSet(viewsets.ModelViewSet):
     queryset = Order.objects.all()
     serializer_class = OrderSerializer
@@ -24,25 +43,21 @@ class OrderViewSet(viewsets.ModelViewSet):
 
         validated_data = serializer.validated_data
         cart_items = validated_data.pop('cart_items')
+        
+        # Stock validation
         for item in cart_items:
             variant = item.variant
             product = variant.product
-            
-
-            if variant.quantity < item.quantity:
-                raise serializers.ValidationError(
-                    f"Not enough stock for {product.name} - {variant.color} / {variant.size}. "
-                    f"Available: {variant.quantity}, Requested: {item.quantity}"
-                )
-            
-            # Check if product has enough stock (additional safety check)
+        
             if product.quantity < item.quantity:
                 raise serializers.ValidationError(
                     f"Not enough stock for {product.name}. "
                     f"Available: {product.quantity}, Requested: {item.quantity}"
                 )
 
-        total = sum(item.quantity * item.variant.product.price for item in cart_items)
+        subtotal = sum(item.quantity * item.variant.product.price for item in cart_items)
+        shipping_price = 100  # 100 taka shipping
+        total = subtotal + shipping_price
 
         if validated_data.get('shipping_method') == 'online_payment':
             with transaction.atomic():
@@ -107,40 +122,59 @@ class OrderViewSet(viewsets.ModelViewSet):
 
         # 🟡 Cash on Delivery (COD)
         else:
-                    # Cash on Delivery
-                with transaction.atomic():
-                        order = Order.objects.create(
-                            **validated_data,
-                            total=total,
-                        )
-                        order.cart_items.set(cart_items)
-                        
-                        # Update stock
-                        for item in cart_items:
-                            variant = item.variant
-                            product = variant.product
-                            
-                            variant.quantity -= item.quantity
-                            variant.save()
-                            
-                            product.quantity -= item.quantity
-                            product.save()
-                # Clear the cart after successful order
-                cart = cart_items.first().cart if cart_items.exists() else None
+            with transaction.atomic():
+                order = Order.objects.create(
+                    **validated_data,
+                    total=total,
+                )
+                order.cart_items.set(cart_items)
+                
+                for item in cart_items:
+                    variant = item.variant
+                    product = variant.product
+                    
+                    product.quantity -= item.quantity
+                    product.save()
+            
+            if cart_items:  # Check if list is not empty
+                cart = cart_items[0].cart  # Get cart from first item
                 if cart:
                     cart.items.all().delete()
 
-                return Response(
-                    {
-                        "message": "Order created successfully",
-                        "order_id": order.id,
-                        "total": total
-                    }, 
-                    status=status.HTTP_201_CREATED
+            try:
+                email_context = {
+                    'order': order,
+                    'customer_name': validated_data.get('full_name'),
+                    'order_id': order.id,
+                    'order_date': order.placed_at,
+                    'total_amount': total,
+                    'items': cart_items,
+                    'subtotal': subtotal,
+                    'shipping_price': shipping_price,
+                    'shipping_address': validated_data.get('address'),
+                    'city': validated_data.get('city'),
+                    'phone': validated_data.get('phone'),
+                    'payment_method': 'Cash on Delivery',
+                    'order_status': 'Confirmed'
+                }
+                
+                send_checkout_email(
+                    email=validated_data.get('email'),
+                    subject=f'Order Confirmation - #{order.id}',
+                    template='emails/order_confirmation.html',  # Create this template
+                    context=email_context
                 )
+            except Exception as e:
+                print(f"COD email failed: {str(e)}")
 
-
-
+            return Response(
+                {
+                    "message": "Order created successfully",
+                    "order_id": order.id,
+                    "total": total
+                }, 
+                status=status.HTTP_201_CREATED
+            )
 @api_view(['POST'])
 @permission_classes([AllowAny]) 
 def ssl_payment_success(request):
@@ -164,20 +198,10 @@ def ssl_payment_success(request):
                         print("variant", variant)
                         product = variant.product
                         print("Product", product)
-                        
-                        # Check both variant and product stock
-                        if variant.quantity < item.quantity:
-                            print(f"Insufficient stock for variant {variant}: {variant.quantity} available, {item.quantity} requested")
-                            return redirect(f"http://localhost:5173/payment/fail?reason=insufficient_stock_variant&order_id={order.id}")
-                        
+
                         if product.quantity < item.quantity:
                             print(f"Insufficient stock for product {product}: {product.quantity} available, {item.quantity} requested")
                             return redirect(f"http://localhost:5173/payment/fail?reason=insufficient_stock_product&order_id={order.id}")
-                        
-                        # Update both variant and product quantities
-                        variant.quantity -= item.quantity
-                        variant.save()
-                        print(f"Variant {variant} quantity updated to {variant.quantity}")
                         
                         product.quantity -= item.quantity
                         product.save()
@@ -190,7 +214,41 @@ def ssl_payment_success(request):
                     order.save()
                     print(f"Order {order_id} marked as paid")
 
-                return redirect(f"http://localhost:5173/payment/success?order_id={order.id}")
+                subtotal = sum(item.quantity * item.variant.product.price for item in order.cart_items.all())
+                shipping_price = 100  # 100 taka shipping
+                total = subtotal + shipping_price
+                try:
+                    email_context = {
+                        'order': order,
+                        'customer_name': order.full_name,
+                        'order_id': order.id,
+                        'order_date': order.placed_at,
+                        'subtotal': subtotal,
+                        'shipping_price': shipping_price,
+                        'total_amount': total,
+                        'items': order.cart_items.all(),
+                        'shipping_address': order.address,
+                        'city': order.city,
+                        'phone': order.phone,
+                        'payment_method': 'Online Payment',
+                        'order_status': 'Confirmed',
+                        'transaction_id': tran_id
+                    }
+                    
+                    send_checkout_email(
+                        email=order.email,
+                        subject=f'Order Confirmation - #{order.id}',
+                        template='emails/order_confirmation.html',
+                        context=email_context
+                    )
+                    print(f"Confirmation email sent to {order.email}")
+
+                    
+                except Exception as e:
+                    print(f"Failed to send confirmation email: {str(e)}")
+                    # Don't fail the payment process if email fails
+
+                return redirect(f"http://localhost:5173/payment/success/{order.id}")
         
         # If not a valid order transaction
         print(f"Invalid transaction ID format: {tran_id}")
@@ -199,10 +257,7 @@ def ssl_payment_success(request):
     except (Order.DoesNotExist, ValueError, IndexError) as e:
         print(f"[Payment Success] Error processing order: {e}")
         return redirect(f"http://localhost:5173/payment/fail?reason=order_not_found&tran_id={tran_id}")
-
-    except (Order.DoesNotExist, ValueError, IndexError) as e:
-        print(f"[Payment Success] Error processing order: {e}")
-        return redirect(f"http://localhost:5173/payment/fail?reason=order_not_found&tran_id={tran_id}")
+    
     
 @api_view(['POST'])
 @permission_classes([AllowAny]) 
