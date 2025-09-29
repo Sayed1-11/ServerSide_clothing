@@ -26,7 +26,7 @@ def send_checkout_email(email, subject, template, context):
             
             # Send email via Resend
             r = resend.Emails.send({
-                "from": "onboarding@resend.dev",
+                "from": os.environ.get('EMAIL'),
                 "to": email,
                 "subject": subject,
                 "html": html_content,
