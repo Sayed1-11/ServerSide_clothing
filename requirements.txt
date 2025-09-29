@@ -2,6 +2,7 @@ asgiref==3.9.1
 certifi==2025.8.3
 charset-normalizer==3.4.3
 Django==4.2.24
+django-background-tasks==1.2.8
 django-cors-headers==4.9.0
 django-filter==25.1
 djangorestframework==3.16.1
@@ -11,6 +12,7 @@ pillow==11.3.0
 PyJWT==2.10.1
 python-decouple==3.8
 requests==2.32.5
+six==1.17.0
 sqlparse==0.5.3
 typing_extensions==4.15.0
 tzdata==2025.2
