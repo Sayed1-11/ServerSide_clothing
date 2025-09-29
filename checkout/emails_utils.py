@@ -1,46 +1,42 @@
 import threading
 import logging
 import os
-from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
-from django.conf import settings
+import resend
 
 logger = logging.getLogger(__name__)
 
 def send_checkout_email(email, subject, template, context):
-    """Send email in background thread with production logging"""
+    """Send email using Resend API"""
     
     def send_sync():
         try:
-            logger.info(f"🟡 Starting email send to: {email}")
-            logger.info(f"🟡 Environment: {'Production' if os.environ.get('RENDER') else 'Development'}")
+            # Check if API key is set
+            api_key = os.environ.get('EMAIL_API_KEY')
+            if not api_key:
+                logger.error("❌ EMAIL_API_KEY not set in environment variables")
+                return False
+                
+            resend.api_key = api_key
             
-            # Check environment
-            if os.environ.get('RENDER'):
-                logger.info("🟡 Running on Render - using production email settings")
+            logger.info(f"🟡 Starting Resend email to: {email}")
             
             # Render template
-            message = render_to_string(template, context)
+            html_content = render_to_string(template, context)
             
-            # Create email - USE DEFAULT_FROM_EMAIL instead of EMAIL_HOST_USER
-            email_obj = EmailMultiAlternatives(
-                subject=subject,
-                body='Thank you for your order!',
-                from_email=settings.DEFAULT_FROM_EMAIL,  # ← FIXED: Use DEFAULT_FROM_EMAIL
-                to=[email]
-            )
-            email_obj.attach_alternative(message, "text/html")
+            # Send email via Resend
+            r = resend.Emails.send({
+                "from": "onboarding@resend.dev",
+                "to": email,
+                "subject": subject,
+                "html": html_content,
+            })
             
-            # Send email
-            email_obj.send()
-            logger.info(f"✅ Email sent successfully to {email}")
+            logger.info(f"✅ Resend email sent successfully to {email}")
             return True
             
         except Exception as e:
-            logger.error(f"❌ Email failed for {email}: {str(e)}")
-            logger.error(f"❌ Email backend: {getattr(settings, 'EMAIL_BACKEND', 'Not set')}")
-            logger.error(f"❌ Email host: {getattr(settings, 'EMAIL_HOST', 'Not set')}")
-            logger.error(f"❌ From email: {getattr(settings, 'DEFAULT_FROM_EMAIL', 'Not set')}")
+            logger.error(f"❌ Resend email failed for {email}: {str(e)}")
             return False
     
     thread = threading.Thread(target=send_sync, daemon=True)
