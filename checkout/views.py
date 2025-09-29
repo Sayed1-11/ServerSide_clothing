@@ -10,27 +10,11 @@ import uuid
 import requests
 from rest_framework.decorators import api_view,permission_classes
 from django.db import transaction
-from rest_framework import serializers
-from django.core.mail import EmailMessage, EmailMultiAlternatives
-from django.template.loader import render_to_string
+from rest_framework import serializers 
+from .emails_utils import send_checkout_email
 
-def send_checkout_email(email, subject, template, context):
-    try:
-        message = render_to_string(template, context)
-        print("Sending email")
-        send_email = EmailMultiAlternatives(
-            subject, 
-            '', 
-            from_email=settings.EMAIL_HOST_USER, 
-            to=[email]
-        )
-        send_email.attach_alternative(message, "text/html")
-        send_email.send()
-        return True
-    except Exception as e:
-        print(f"Email sending failed: {str(e)}")
-        return False
-    
+
+
 class OrderViewSet(viewsets.ModelViewSet):
     queryset = Order.objects.all()
     serializer_class = OrderSerializer

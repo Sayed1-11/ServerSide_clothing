@@ -48,7 +48,13 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'corsheaders', 
     'django_filters',
+    'background_task',
 ]
+
+
+BACKGROUND_TASK_RUN_ASYNC = True
+BACKGROUND_TASK_ASYNC_THREADS = 4
+
 
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
