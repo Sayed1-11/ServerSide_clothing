@@ -89,7 +89,7 @@ WSGI_APPLICATION = 'serverside.wsgi.application'
 
 CORS_ALLOWED_ORIGINS = [
     "https://stylehub-11c33.web.app",
-    "https://stylehub-11c33.web.app/",
+    "https://stylehub-11c33.web.app",
     "http://localhost:8000",
     "http://127.0.0.1:8000",
 ]
