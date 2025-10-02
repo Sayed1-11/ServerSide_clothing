@@ -88,14 +88,15 @@ TEMPLATES = [
 WSGI_APPLICATION = 'serverside.wsgi.application'
 
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
+    "https://stylehub-11c33.web.app",
+    "https://stylehub-11c33.web.app/",
     "http://localhost:8000",
     "http://127.0.0.1:8000",
 ]
 CSRF_TRUSTED_ORIGINS = [
     "https://serverside-clothing.onrender.com",
     "https://www.serverside-clothing.onrender.com", 
+    "https://stylehub-11c33.web.app"
 ]
 
 CORS_ALLOW_CREDENTIALS = True
