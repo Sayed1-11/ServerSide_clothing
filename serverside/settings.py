@@ -98,6 +98,7 @@ CSRF_TRUSTED_ORIGINS = [
     "https://stylehub-11c33.web.app",
     "https://serverside-clothing.onrender.com",
     "https://www.serverside-clothing.onrender.com", 
+    "https://stylehub-11c33.web.app"
 ]
 
 CORS_ALLOW_CREDENTIALS = True
