@@ -46,6 +46,7 @@ class Product(models.Model):
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = slugify(self.name)
+        self.available = self.is_in_stock
         super().save(*args, **kwargs)
     
     def get_primary_category(self):
